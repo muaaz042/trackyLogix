@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'users',
     'inboundRequests',
-    'tasks'
+    'tasks',
+    'rfid'
 ]
 
 MIDDLEWARE = [

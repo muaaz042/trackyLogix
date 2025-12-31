@@ -32,5 +32,6 @@ urlpatterns = [
 
     path('api/', include('users.api.urls')),
     path('api/', include('inboundRequests.api.urls')),
-    path('api/', include('tasks.api.urls'))
+    path('api/', include('tasks.api.urls')),
+    path('api/', include('rfid.api.urls'))
 ]
