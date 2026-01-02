@@ -1,46 +1,58 @@
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
 from tasks.models import Task
 from inboundRequests.models import InboundRequest
 
+User = get_user_model()
+
 class TaskSerializer(serializers.ModelSerializer):
-    assigned_by_user = serializers.StringRelatedField(read_only=True)
-    assigned_to_email = serializers.EmailField(source='assigned_to_user.email', read_only=True)
-    
-    # 1. Input ID
-    inbound_request = serializers.PrimaryKeyRelatedField(
-        queryset=InboundRequest.objects.all(),
+    # INPUT: Accept ID for Inbound Request
+    inbound_request_id = serializers.PrimaryKeyRelatedField(
+        queryset=InboundRequest.objects.all(), 
+        source='inbound_request', 
+        write_only=True,
         required=False,
         allow_null=True
     )
 
-    # 2. Output Custom String (Without the confusing status)
-    inbound_request_details = serializers.SerializerMethodField()
+    # OUTPUT: Show details of Inbound Request (Reference Number)
+    inbound_request_details = serializers.CharField(
+        source='inbound_request.reference_number', 
+        read_only=True,
+        default=None
+    )
+
+    # INPUT: Assign to User (ID)
+    assigned_to_user_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source='assigned_to_user',
+        write_only=True
+    )
+
+    # OUTPUT: User Details
+    assigned_to_user_email = serializers.EmailField(source='assigned_to_user.email', read_only=True)
+    assigned_by_user_email = serializers.EmailField(source='assigned_by_user.email', read_only=True)
 
     class Meta:
         model = Task
         fields = [
             'id', 
-            'name', 
+            'task_type',
             'description', 
             'status', 
-            'inbound_request',
-            'inbound_request_details', 
-            'assigned_by_user', 
-            'assigned_to_user', 
-            'assigned_to_email',
+            'inbound_request_id', 
+            'inbound_request_details',
+            'assigned_to_user_id', 
+            'assigned_to_user_email',
+            'assigned_by_user_email',
             'created_at', 
             'updated_at'
         ]
-        read_only_fields = ['assigned_by_user', 'created_at', 'updated_at', 'inbound_request_details']
+        read_only_fields = ['created_at', 'updated_at', 'assigned_by_user_email']
 
-    def get_inbound_request_details(self, obj):
-        if not obj.inbound_request:
-            return None
-        # Custom format: "Req #1 - email@example.com" (Removed the status part)
-        return f"Req #{obj.inbound_request.id} - {obj.inbound_request.client.user.email} ({obj.status})"
-
-
-class TaskStatusUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Task
-        fields = ['status']
+class TaskStatusUpdateSerializer(serializers.Serializer):
+    """
+    Serializer specifically for updating the status of a Task.
+    Used by custom actions in the viewset.
+    """
+    status = serializers.ChoiceField(choices=Task.STATUS_CHOICES)

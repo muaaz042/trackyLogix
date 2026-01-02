@@ -5,16 +5,17 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 
 from inboundRequests.models import InboundRequest, InboundItem
+from users.models import ClientProfile
 from .serializer import (
     InboundRequestSerializer, 
     InboundItemSerializer,
     ManagerRequestStatusSerializer,
-    ManagerItemStatusSerializer
+    DEOItemStatusSerializer # Renamed from ManagerItemStatusSerializer
 )
-from .permissions import IsClient, IsManager
+from .permissions import IsClient, IsManager, IsDEO
 from inboundRequests.services.business_logic import (
     manager_update_request_status,
-    manager_update_item_status,
+    deo_update_item_status, # Renamed
     validate_request_modification,
     get_and_validate_request_for_item_creation
 )
@@ -40,6 +41,13 @@ class InboundRequestViewSet(ModelViewSet):
             warehouse_filter=self.request.query_params.get('warehouse_id')
         )
 
+    def perform_create(self, serializer):
+        try:
+            client_profile = ClientProfile.objects.get(user=self.request.user)
+        except ClientProfile.DoesNotExist:
+            raise ValidationError({"detail": "You do not have a Client Profile associated with this account."})
+        serializer.save(client=client_profile)
+
     def perform_destroy(self, instance):
         validate_request_modification(instance)
         super().perform_destroy(instance)
@@ -63,21 +71,19 @@ class InboundItemViewSet(ModelViewSet):
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsClient()]
+        
+        # CHANGED: update_status is now for DEO
         if self.action == 'update_status':
-            return [IsAuthenticated(), IsManager()]
+            return [IsAuthenticated(), IsDEO()]
+            
         return [IsAuthenticated()]
 
     def get_queryset(self):
         return get_inbound_items_for_user(self.request.user)
 
     def perform_create(self, serializer):
-        # 1. Logic extracted to business_logic.py
         request_id = self.kwargs.get('request_pk') or self.request.data.get('inbound_request')
-        
-        # 2. Validate and Get Request
         req = get_and_validate_request_for_item_creation(request_id, self.request.user)
-        
-        # 3. Save
         serializer.save(inbound_request=req)
 
     def perform_update(self, serializer):
@@ -91,10 +97,12 @@ class InboundItemViewSet(ModelViewSet):
     @action(detail=True, methods=["post"])
     def update_status(self, request, pk=None):
         item = self.get_object()
-        serializer = ManagerItemStatusSerializer(data=request.data)
+        # CHANGED: Using DEO serializer
+        serializer = DEOItemStatusSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            manager_update_item_status(item, serializer.validated_data['item_status'])
+            # CHANGED: Calling DEO logic
+            deo_update_item_status(item, serializer.validated_data['item_status'])
             return Response({"message": "Item status updated"})
         except ValidationError as e:
             return Response({"error": str(e)}, status=400)

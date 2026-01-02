@@ -1,87 +1,61 @@
 from django.contrib import admin
 from .models import InboundRequest, InboundItem
 
-class InboundItemInline(admin.TabularInline):
-    """
-    Allows InboundItems to be edited directly inside the InboundRequest page.
-    """
-    model = InboundItem
-    extra = 0  # Removes empty extra rows by default
-    fields = ('name', 'sku', 'quantity', 'unit_type', 'item_status')
-    readonly_fields = ('item_status',)  # Prevent accidental status changes here if needed
-    show_change_link = True
-
-
 @admin.register(InboundRequest)
 class InboundRequestAdmin(admin.ModelAdmin):
     list_display = (
         'id', 
-        'get_client_email', 
+        'client', 
         'warehouse', 
-        'status',
-        'transport_mode',
-        'driver_name',
-        'driver_contact',
-        'vehicle_number',
-        'additional_notes', 
+        'expected_arrival_date', 
+        'status', 
         'approved_by_user', 
         'created_at'
     )
-    list_filter = ('status', 'warehouse', 'created_at')
+    list_filter = ('status', 'expected_arrival_date', 'created_at', 'warehouse')
     search_fields = (
-        'id', 
-        'client__user__email',  # Search by client email
-        'driver_name', 
-        'vehicle_number'
+        'id',
+        'client__user__email', 
+        'warehouse__name'
     )
-    readonly_fields = ('created_at', 'updated_at', 'approved_by_user')
-    inlines = [InboundItemInline]
-    
-    # Helper to display email since 'client' is a profile object
-    @admin.display(description='Client Email', ordering='client__user__email')
-    def get_client_email(self, obj):
-        return obj.client.user.email
-
-    fieldsets = (
-        ("Request Info", {
-            "fields": ("warehouse", "client", "status", "approved_by_user")
-        }),
-        ("Transport Details", {
-            "fields": ("transport_mode", "driver_name", "driver_contact", "vehicle_number", "additional_notes")
-        }),
-        ("Timestamps", {
-            "fields": ("created_at", "updated_at"),
-            "classes": ("collapse",),  # Hide by default to save space
-        }),
-    )
+    readonly_fields = ('created_at', 'updated_at')
 
 
 @admin.register(InboundItem)
 class InboundItemAdmin(admin.ModelAdmin):
-    """
-    Separate view for items if you need to search for a specific SKU across all requests.
-    """
     list_display = (
         'id', 
-        'name',
-        'description', 
-        'sku',
-        'carton_weight',
-        'carton_dimensions',
-        'temperature_range',
-        'fragile',
-        'hazardous',
-        'humidity', 
+        'name', 
+        'sku', 
         'quantity', 
-        'total_inventory_value',
-        'unit_type', 
-        'item_status', 
+        'unit_type',
+        'temp_range',
         'expected_arrival_date',
-        'get_request_id'
+        'item_status', 
+        'total_inventory_value',
+        'inbound_request'
     )
-    list_filter = ('item_status', 'unit_type', 'sku')
-    search_fields = ('name', 'sku', 'inbound_request__id')
-    
-    @admin.display(description='Request ID', ordering='inbound_request')
-    def get_request_id(self, obj):
-        return obj.inbound_request.id
+    list_filter = ('item_status', 'unit_type', 'fragile', 'hazardous', 'created_at')
+    search_fields = (
+        'name', 
+        'sku', 
+        'batch_or_lot_no',
+    )
+    fieldsets = (
+        ('Basic Info', {
+            'fields': ('inbound_request', 'name', 'sku', 'quantity', 'item_status')
+        }),
+        ('Physical Specs', {
+            'fields': ('weight', 'dimensions', 'unit_type', 'fragile', 'hazardous')
+        }),
+        ('Environment & Value', {
+            'fields': ('temp_range', 'humidity_range', 'total_inventory_value')
+        }),
+        ('Dates & Batches', {
+            'fields': ('expected_arrival_date', 'batch_or_lot_no', 'expiry_date') # Updated name
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at')
+        })
+    )
+    readonly_fields = ('created_at', 'updated_at')

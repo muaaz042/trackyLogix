@@ -1,20 +1,12 @@
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from rfid.models import RFIDTag
-from users.models import ClientProfile
-from inboundRequests.models import InboundRequest
 
 def validate_rfid_creation(user, data):
     """
-    Validates that the user is a DEO and that the linked data matches.
+    Validates that the user is a DEO.
     """
     if user.role != 'DEO':
         raise PermissionDenied("Only DEOs can create (encode) RFID tags.")
-    
-    inbound_request = data.get('inbound_request')
-    client = data.get('client')
-
-    if inbound_request.client != client:
-        raise ValidationError("The Inbound Request does not belong to the specified Client.")
 
 def create_rfid_tag_service(user, validated_data):
     """
@@ -22,7 +14,7 @@ def create_rfid_tag_service(user, validated_data):
     """
     validate_rfid_creation(user, validated_data)
     
-    # REMOVED: created_by_user=user from arguments
+    # Just create it. The 'inbound_item' is already validated by the serializer.
     tag = RFIDTag.objects.create(
         **validated_data
     )

@@ -1,44 +1,40 @@
 from rest_framework import serializers
 from rfid.models import RFIDTag
-from inboundRequests.models import InboundRequest
-from users.models import ClientProfile, Warehouse
+from inboundRequests.models import InboundItem
 
 class RFIDTagSerializer(serializers.ModelSerializer):
-    # Inputs (IDs)
-    client_id = serializers.PrimaryKeyRelatedField(
-        queryset=ClientProfile.objects.all(), 
-        source='client'
-    )
-    warehouse_id = serializers.PrimaryKeyRelatedField(
-        queryset=Warehouse.objects.all(), 
-        source='warehouse',
-        required=False,
-        allow_null=True
-    )
-    inbound_request_id = serializers.PrimaryKeyRelatedField(
-        queryset=InboundRequest.objects.all(), 
-        source='inbound_request'
+    # Input: ID of the Inbound Item
+    inbound_item_id = serializers.PrimaryKeyRelatedField(
+        queryset=InboundItem.objects.all(), 
+        source='inbound_item', 
+        write_only=True
     )
 
-    # Outputs
-    client_email = serializers.EmailField(source='client.user.email', read_only=True)
-    inbound_request_details = serializers.SerializerMethodField()
-    # REMOVED: created_by field
+    # Output: String representation of the item
+    inbound_item_details = serializers.StringRelatedField(source='inbound_item', read_only=True)
+    
+    # Output: Fetch SKU from the related InboundItem
+    sku = serializers.CharField(source='inbound_item.sku', read_only=True)
 
     class Meta:
         model = RFIDTag
         fields = [
-            'id', 'epc', 'sku', 'batch_or_lot_no', 'status',
-            'client_id', 'client_email',
-            'warehouse_id',
-            'inbound_request_id', 'inbound_request_details',
-            'created_at', 'updated_at' # Removed 'created_by'
+            'id', 
+            'epc', 
+            'status', 
+            'inbound_item_id', 
+            'inbound_item_details', 
+            'sku', 
+            'created_at', 
+            'updated_at'
         ]
-        read_only_fields = ['status', 'created_at', 'updated_at', 'inbound_request_details', 'client_email']
-
-    def get_inbound_request_details(self, obj):
-        return f"Req #{obj.inbound_request.id}"
+        # CHANGE: Removed 'epc' from here so you can update/encode it.
+        # Only system timestamps and derived fields should be read-only.
+        read_only_fields = ['created_at', 'updated_at', 'sku', 'inbound_item_details']
 
 
 class RFIDStatusSerializer(serializers.Serializer):
+    """
+    Serializer specifically for updating the status of an RFID tag.
+    """
     status = serializers.ChoiceField(choices=RFIDTag.STATUS_CHOICES)

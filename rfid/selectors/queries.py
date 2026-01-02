@@ -8,19 +8,22 @@ def get_rfid_tags_for_user(user):
     """
     Returns the queryset of RFID tags visible to the user.
     """
-    # 1. DEO: Can see tags in their assigned warehouse (Recommended) or All if needed
+    # 1. DEO: Can see tags in their assigned warehouse
     if user.role == "DEO":
         allowed_ids = get_allowed_warehouses(user)
-        return RFIDTag.objects.filter(warehouse_id__in=allowed_ids)
+        # Fix: Traverse through item -> request -> warehouse
+        return RFIDTag.objects.filter(inbound_item__inbound_request__warehouse_id__in=allowed_ids)
 
     # 2. Manager / Allocator: Warehouse Specific
     if user.role in ["manager", "Allocator"]:
         allowed_ids = get_allowed_warehouses(user)
-        return RFIDTag.objects.filter(warehouse_id__in=allowed_ids)
+        # Fix: Traverse through item -> request -> warehouse
+        return RFIDTag.objects.filter(inbound_item__inbound_request__warehouse_id__in=allowed_ids)
 
     # 3. Client: Own Tags
     if user.role == "client":
-        return RFIDTag.objects.filter(client__user=user)
+        # Fix: Traverse through item -> request -> client -> user
+        return RFIDTag.objects.filter(inbound_item__inbound_request__client__user=user)
 
     # 4. Admin: All
     if user.role == "admin":

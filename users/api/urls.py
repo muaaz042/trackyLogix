@@ -1,22 +1,24 @@
-from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from django.urls import path, include
 from .views import (
-    RegisterView,
-    LoginView,
-    UserViewSet,
-    WarehouseViewSet,
-    WarehouseUserManagementViewSet,
+    RegisterView, 
+    LoginView, 
+    UserViewSet, 
+    WarehouseViewSet, 
+    WarehouseUserManagementViewSet, 
     ClientProfileViewSet,
+    ClientWarehouseViewSet
 )
 
 router = DefaultRouter()
-router.register("users", UserViewSet, basename="users")
-router.register("warehouses", WarehouseViewSet, basename="warehouses")
-router.register("warehouse-users", WarehouseUserManagementViewSet, basename="warehouse-users")
-router.register("client-profile", ClientProfileViewSet, basename="client-profile")
+router.register('users', UserViewSet, basename='users')
+router.register('warehouses', WarehouseViewSet, basename='warehouses')
+router.register('warehouse-users', WarehouseUserManagementViewSet, basename='warehouse-users')
+router.register('client-warehouses', ClientWarehouseViewSet, basename='client-warehouses')
+router.register('client-profile', ClientProfileViewSet, basename='client-profile')
 
 urlpatterns = [
-    path("register/", RegisterView.as_view(), name="register"),
-    path("login/", LoginView.as_view(), name="login"),
-    path("", include(router.urls)),
+    path('register/', RegisterView.as_view(), name='register'),
+    path('login/', LoginView.as_view(), name='login'),
+    path('', include(router.urls)),
 ]

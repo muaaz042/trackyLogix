@@ -3,9 +3,7 @@ from .models import RFIDTag
 
 @admin.register(RFIDTag)
 class RFIDTagAdmin(admin.ModelAdmin):
-    list_display = ('id', 'epc', 'sku', 'status', 'client', 'warehouse', 'inbound_request', 'created_at')
-    list_filter = ('status', 'warehouse', 'created_at')
-    search_fields = ('epc', 'sku', 'batch_or_lot_no', 'client__user__email', 'inbound_request__id')
-    
-    # REMOVED: 'created_by_user'
+    list_display = ('id','epc', 'status', 'inbound_item', 'created_at')
+    list_filter = ('status', 'created_at')
+    search_fields = ('epc', 'inbound_item__name', 'inbound_item__sku')
     readonly_fields = ('created_at', 'updated_at')
