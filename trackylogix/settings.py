@@ -50,7 +50,8 @@ INSTALLED_APPS = [
     'tasks',
     'rfid',
     'discrepancy',
-    'locations'
+    'locations',
+    'allocations'
 ]
 
 MIDDLEWARE = [
