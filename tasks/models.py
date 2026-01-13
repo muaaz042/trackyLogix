@@ -14,7 +14,6 @@ class Task(models.Model):
         ('outbound', 'Outbound'),
     ]
 
-    # CHANGED: Added task_type, Removed name
     task_type = models.CharField(max_length=20, choices=TASK_TYPE_CHOICES, default='inbound')
     description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
@@ -29,10 +28,6 @@ class Task(models.Model):
         help_text="The Inbound Request this task is related to (if type is Inbound)"
     )
     
-    # Placeholder for future Outbound Request:
-    # outbound_request = models.ForeignKey(OutboundRequest, ..., null=True, blank=True)
-
-    # Relationships
     assigned_by_user = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
@@ -53,6 +48,7 @@ class Task(models.Model):
         # Dynamic string representation based on what request is attached
         ref = "N/A"
         if self.inbound_request:
-            ref = self.inbound_request.reference_number
+            # FIX: Use ID instead of reference_number
+            ref = f"Req #{self.inbound_request.id}"
         
         return f"{self.get_task_type_display()} Task ({ref}) - {self.status}"

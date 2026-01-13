@@ -27,7 +27,7 @@ from drf_spectacular.views import (
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-     # Swagger / OpenAPI
+    # Swagger / OpenAPI
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema')),
 
@@ -36,7 +36,8 @@ urlpatterns = [
     path('api/', include('inboundRequests.api.urls')),
     path('api/', include('tasks.api.urls')),
     path('api/', include('rfid.api.urls')),
-    path('api/', include('discrepancy.api.urls'))
+    path('api/', include('discrepancy.api.urls')),
+    path('api/', include('locations.api.urls'))
 ]
 
 if settings.DEBUG:

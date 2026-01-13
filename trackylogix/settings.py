@@ -49,7 +49,8 @@ INSTALLED_APPS = [
     'inboundRequests',
     'tasks',
     'rfid',
-    'discrepancy'
+    'discrepancy',
+    'locations'
 ]
 
 MIDDLEWARE = [
@@ -66,6 +67,7 @@ MIDDLEWARE = [
 # CORS Settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Next.js default dev server
+    "http://localhost:3001",
     "http://127.0.0.1:3000",
     # Add your production frontend URL here when deployed
 ]
