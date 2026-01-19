@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings
+# We import these models only for referencing in methods, not for ForeignKeys anymore
 from inboundRequests.models import InboundRequest
+from outbound.models import OutboundRequest
 
 class Task(models.Model):
     STATUS_CHOICES = [
@@ -18,37 +20,49 @@ class Task(models.Model):
     description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     
-    # Links
-    inbound_request = models.ForeignKey(
-        InboundRequest,
-        on_delete=models.CASCADE,
-        related_name='tasks',
-        null=True, 
-        blank=True,
-        help_text="The Inbound Request this task is related to (if type is Inbound)"
-    )
-    
+    # --- DYNAMIC LINKING ---
+    # Stores the ID of either InboundRequest or OutboundRequest
+    request_id = models.PositiveIntegerField(help_text="ID of the related Inbound or Outbound Request")
+
+    # --- USER ASSIGNMENTS ---
     assigned_by_user = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
         related_name='assigned_tasks',
         help_text="Manager who created the task"
     )
-    assigned_to_user = models.ForeignKey(
+
+    # Changed: Specific field for DEO
+    assigned_to_deo = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
-        on_delete=models.CASCADE, 
-        related_name='my_tasks',
-        help_text="DEO or Allocator assigned to the task"
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='deo_tasks',
+        help_text="DEO assigned to this task"
+    )
+
+    # Added: Specific field for Allocator
+    assigned_to_allocator = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='allocator_tasks',
+        help_text="Allocator assigned to this task"
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def related_object(self):
+        """Helper to fetch the actual object based on type and ID"""
+        if self.task_type == 'inbound':
+            return InboundRequest.objects.filter(id=self.request_id).first()
+        elif self.task_type == 'outbound':
+            return OutboundRequest.objects.filter(id=self.request_id).first()
+        return None
+
     def __str__(self):
-        # Dynamic string representation based on what request is attached
-        ref = "N/A"
-        if self.inbound_request:
-            # FIX: Use ID instead of reference_number
-            ref = f"Req #{self.inbound_request.id}"
-        
-        return f"{self.get_task_type_display()} Task ({ref}) - {self.status}"
+        return f"{self.get_task_type_display()} Task #{self.id} (Req {self.request_id}) - {self.status}"

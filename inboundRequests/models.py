@@ -12,7 +12,6 @@ class InboundRequest(models.Model):
     client = models.ForeignKey(ClientProfile, on_delete=models.CASCADE, related_name='inbound_requests')
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='inbound_requests')
     
-    # General date for the whole request
     expected_arrival_date = models.DateField(default=timezone.now)
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
@@ -33,7 +32,6 @@ class InboundRequest(models.Model):
 
 
 class InboundItem(models.Model):
-    # CHANGED: Only 2 statuses allowed now
     ITEM_STATUS_CHOICES = [
         ('not arrived yet', 'Not Arrived Yet'),
         ('arrived', 'Arrived'),
@@ -51,11 +49,14 @@ class InboundItem(models.Model):
     sku = models.CharField(max_length=100)
     quantity = models.PositiveIntegerField()
     
+    # --- NEW FIELD ---
+    # Tracks how many items are actually left in the warehouse for this batch
+    remaining_quantity = models.PositiveIntegerField(default=0)
+
     # --- PHYSICAL PROPERTIES ---
     weight = models.DecimalField(max_digits=10, decimal_places=2, help_text="Weight in KG")
     dimensions = models.CharField(max_length=100, help_text="L x W x H (cm)", default="0x0x0")
     
-    # --- NEW FIELDS ---
     expected_arrival_date = models.DateField(default=timezone.now, help_text="Expected arrival for this specific item")
     
     temp_range = models.CharField(max_length=50, blank=True, null=True, help_text="e.g., '10-20 C'")
@@ -65,15 +66,19 @@ class InboundItem(models.Model):
     total_inventory_value = models.DecimalField(max_digits=15, decimal_places=2, default=0.00, help_text="Total value in currency")
     humidity_range = models.CharField(max_length=50, blank=True, null=True, help_text="e.g., '40-60%'")
 
-    # --- EXISTING OPTIONAL FIELDS ---
     batch_or_lot_no = models.CharField(max_length=100, blank=True, null=True)
     expiry_date = models.DateField(blank=True, null=True)
     
-    # CHANGED: Default is now 'not arrived yet'
     item_status = models.CharField(max_length=30, choices=ITEM_STATUS_CHOICES, default='not arrived yet')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        # If this is a new object (no ID yet), initialize remaining_quantity
+        if not self.pk:
+            self.remaining_quantity = self.quantity
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.name} ({self.sku})"
+        return f"{self.name} ({self.sku}) - Left: {self.remaining_quantity}"

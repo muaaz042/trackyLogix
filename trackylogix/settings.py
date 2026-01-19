@@ -51,7 +51,8 @@ INSTALLED_APPS = [
     'rfid',
     'discrepancy',
     'locations',
-    'allocations'
+    'allocations',
+    'outbound'
 ]
 
 MIDDLEWARE = [

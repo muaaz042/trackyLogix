@@ -28,6 +28,7 @@ class InboundItemAdmin(admin.ModelAdmin):
         'name', 
         'sku', 
         'quantity', 
+        'remaining_quantity',  # <--- ADDED HERE
         'unit_type',
         'temp_range',
         'expected_arrival_date',
@@ -43,7 +44,8 @@ class InboundItemAdmin(admin.ModelAdmin):
     )
     fieldsets = (
         ('Basic Info', {
-            'fields': ('inbound_request', 'name', 'sku', 'quantity', 'item_status')
+            # ADDED remaining_quantity HERE
+            'fields': ('inbound_request', 'name', 'sku', 'quantity', 'remaining_quantity', 'item_status')
         }),
         ('Physical Specs', {
             'fields': ('weight', 'dimensions', 'unit_type', 'fragile', 'hazardous')
@@ -52,7 +54,7 @@ class InboundItemAdmin(admin.ModelAdmin):
             'fields': ('temp_range', 'humidity_range', 'total_inventory_value')
         }),
         ('Dates & Batches', {
-            'fields': ('expected_arrival_date', 'batch_or_lot_no', 'expiry_date') # Updated name
+            'fields': ('expected_arrival_date', 'batch_or_lot_no', 'expiry_date')
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at')

@@ -11,6 +11,7 @@ class InboundItemSerializer(serializers.ModelSerializer):
             'name', 
             'sku', 
             'quantity', 
+            'remaining_quantity', # <--- ADDED HERE
             'weight', 
             'dimensions',
             'expected_arrival_date',
@@ -26,7 +27,8 @@ class InboundItemSerializer(serializers.ModelSerializer):
             'created_at', 
             'updated_at'
         ]
-        read_only_fields = ['item_status', 'created_at', 'updated_at']
+        # It's read-only because it's auto-calculated/managed by the system
+        read_only_fields = ['remaining_quantity', 'item_status', 'created_at', 'updated_at']
 
 
 class InboundRequestSerializer(serializers.ModelSerializer):
@@ -56,6 +58,6 @@ class InboundRequestSerializer(serializers.ModelSerializer):
 class ManagerRequestStatusSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=InboundRequest.STATUS_CHOICES)
 
-# CHANGED: Renamed and updated choices for DEO
+# DEO Status Serializer
 class DEOItemStatusSerializer(serializers.Serializer):
     item_status = serializers.ChoiceField(choices=InboundItem.ITEM_STATUS_CHOICES)

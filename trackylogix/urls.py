@@ -38,7 +38,8 @@ urlpatterns = [
     path('api/', include('rfid.api.urls')),
     path('api/', include('discrepancy.api.urls')),
     path('api/', include('locations.api.urls')),
-    path('api/', include('allocations.api.urls'))
+    path('api/', include('allocations.api.urls')),
+    path('api/', include('outbound.api.urls'))
 ]
 
 if settings.DEBUG:

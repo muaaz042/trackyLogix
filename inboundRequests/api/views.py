@@ -10,12 +10,12 @@ from .serializer import (
     InboundRequestSerializer, 
     InboundItemSerializer,
     ManagerRequestStatusSerializer,
-    DEOItemStatusSerializer # Renamed from ManagerItemStatusSerializer
+    DEOItemStatusSerializer
 )
 from .permissions import IsClient, IsManager, IsDEO
 from inboundRequests.services.business_logic import (
     manager_update_request_status,
-    deo_update_item_status, # Renamed
+    deo_update_item_status,
     validate_request_modification,
     get_and_validate_request_for_item_creation
 )
@@ -72,7 +72,6 @@ class InboundItemViewSet(ModelViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsClient()]
         
-        # CHANGED: update_status is now for DEO
         if self.action == 'update_status':
             return [IsAuthenticated(), IsDEO()]
             
@@ -97,11 +96,9 @@ class InboundItemViewSet(ModelViewSet):
     @action(detail=True, methods=["post"])
     def update_status(self, request, pk=None):
         item = self.get_object()
-        # CHANGED: Using DEO serializer
         serializer = DEOItemStatusSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            # CHANGED: Calling DEO logic
             deo_update_item_status(item, serializer.validated_data['item_status'])
             return Response({"message": "Item status updated"})
         except ValidationError as e:

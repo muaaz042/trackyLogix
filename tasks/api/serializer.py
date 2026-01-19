@@ -1,58 +1,49 @@
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
 from tasks.models import Task
-from inboundRequests.models import InboundRequest
-
-User = get_user_model()
+from users.models import User
 
 class TaskSerializer(serializers.ModelSerializer):
-    # INPUT: Accept ID for Inbound Request
-    inbound_request_id = serializers.PrimaryKeyRelatedField(
-        queryset=InboundRequest.objects.all(), 
-        source='inbound_request', 
-        write_only=True,
+    assigned_by_name = serializers.CharField(source='assigned_by_user.email', read_only=True)
+    deo_name = serializers.CharField(source='assigned_to_deo.email', read_only=True)
+    allocator_name = serializers.CharField(source='assigned_to_allocator.email', read_only=True)
+
+    # Inputs for IDs
+    assigned_to_deo = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role='DEO'),
         required=False,
         allow_null=True
     )
-
-    # OUTPUT: Show details of Inbound Request (Reference Number)
-    inbound_request_details = serializers.CharField(
-        source='inbound_request.reference_number', 
-        read_only=True,
-        default=None
+    assigned_to_allocator = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role='Allocator'),
+        required=False,
+        allow_null=True
     )
-
-    # INPUT: Assign to User (ID)
-    assigned_to_user_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(),
-        source='assigned_to_user',
-        write_only=True
-    )
-
-    # OUTPUT: User Details
-    assigned_to_user_email = serializers.EmailField(source='assigned_to_user.email', read_only=True)
-    assigned_by_user_email = serializers.EmailField(source='assigned_by_user.email', read_only=True)
 
     class Meta:
         model = Task
         fields = [
             'id', 
-            'task_type',
+            'task_type', 
+            'request_id',
             'description', 
             'status', 
-            'inbound_request_id', 
-            'inbound_request_details',
-            'assigned_to_user_id', 
-            'assigned_to_user_email',
-            'assigned_by_user_email',
+            'assigned_by_user', 'assigned_by_name',
+            'assigned_to_deo', 'deo_name',
+            'assigned_to_allocator', 'allocator_name',
             'created_at', 
             'updated_at'
         ]
-        read_only_fields = ['created_at', 'updated_at', 'assigned_by_user_email']
+        read_only_fields = ['assigned_by_user', 'created_at', 'updated_at']
 
-class TaskStatusUpdateSerializer(serializers.Serializer):
-    """
-    Serializer specifically for updating the status of a Task.
-    Used by custom actions in the viewset.
-    """
-    status = serializers.ChoiceField(choices=Task.STATUS_CHOICES)
+    def validate(self, data):
+        """
+        Optional: Custom validation logic
+        e.g., Ensure at least one person is assigned.
+        """
+        deo = data.get('assigned_to_deo')
+        allocator = data.get('assigned_to_allocator')
+        
+        if not deo and not allocator:
+            raise serializers.ValidationError("Task must be assigned to at least a DEO or an Allocator.")
+            
+        return data
