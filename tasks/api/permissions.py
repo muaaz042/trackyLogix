@@ -6,8 +6,17 @@ class IsManager(BasePermission):
 
 class IsTaskParticipant(BasePermission):
     """
-    Allows access to Managers (creators) and Workers (assignees).
+    Allows access to:
+    1. Manager (who created it)
+    2. DEO (assigned to it)
+    3. Allocator (assigned to it)
     """
     def has_object_permission(self, request, view, obj):
-        # Manager who created it OR Worker assigned to it
-        return obj.assigned_by_user == request.user or obj.assigned_to_user == request.user
+        user = request.user
+        if obj.assigned_by_user == user:
+            return True
+        if obj.assigned_to_deo == user:
+            return True
+        if obj.assigned_to_allocator == user:
+            return True
+        return False

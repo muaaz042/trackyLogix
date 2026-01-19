@@ -7,7 +7,6 @@ class TaskSerializer(serializers.ModelSerializer):
     deo_name = serializers.CharField(source='assigned_to_deo.email', read_only=True)
     allocator_name = serializers.CharField(source='assigned_to_allocator.email', read_only=True)
 
-    # Inputs for IDs
     assigned_to_deo = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.filter(role='DEO'),
         required=False,
@@ -26,7 +25,8 @@ class TaskSerializer(serializers.ModelSerializer):
             'task_type', 
             'request_id',
             'description', 
-            'status', 
+            'deo_status',        # Changed
+            'allocator_status',  # Changed
             'assigned_by_user', 'assigned_by_name',
             'assigned_to_deo', 'deo_name',
             'assigned_to_allocator', 'allocator_name',
@@ -37,13 +37,29 @@ class TaskSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         """
-        Optional: Custom validation logic
-        e.g., Ensure at least one person is assigned.
+        Custom validation to enforce role-based status updates.
         """
-        deo = data.get('assigned_to_deo')
-        allocator = data.get('assigned_to_allocator')
+        request = self.context.get('request')
+        instance = self.instance # Available on Update operations
+        user = request.user if request else None
+
+        # 1. Assignment Validation (At least one assignee)
+        deo = data.get('assigned_to_deo') or (instance.assigned_to_deo if instance else None)
+        allocator = data.get('assigned_to_allocator') or (instance.assigned_to_allocator if instance else None)
         
         if not deo and not allocator:
             raise serializers.ValidationError("Task must be assigned to at least a DEO or an Allocator.")
+
+        # 2. Status Update Permission Check
+        if instance and user: # If updating an existing task
+            # If user is DEO, they cannot change allocator_status
+            if user.role == 'DEO' and 'allocator_status' in data:
+                if data['allocator_status'] != instance.allocator_status:
+                     raise serializers.ValidationError({"allocator_status": "DEOs cannot update Allocator status."})
             
+            # If user is Allocator, they cannot change deo_status
+            if user.role == 'Allocator' and 'deo_status' in data:
+                if data['deo_status'] != instance.deo_status:
+                     raise serializers.ValidationError({"deo_status": "Allocators cannot update DEO status."})
+
         return data

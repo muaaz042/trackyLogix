@@ -4,41 +4,61 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-def validate_task_assignee(assigned_to_user):
+def validate_task_assignee(assigned_to_user, required_role):
     """
-    Ensure the assignee has the correct role (DEO or Allocator).
+    Helper to validate role.
     """
-    if assigned_to_user.role not in ['DEO', 'Allocator']:
-        raise ValidationError({"assigned_to_user": "Tasks can only be assigned to a DEO or Allocator."})
+    if assigned_to_user and assigned_to_user.role != required_role:
+        raise ValidationError(f"User must have role '{required_role}'.")
 
 def create_task_service(user, validated_data):
     """
     Handles task creation logic.
     """
-    # 1. Ensure User is a Manager
     if user.role != 'manager':
         raise PermissionDenied("Only Managers can create tasks.")
 
-    assigned_to = validated_data.get('assigned_to_user')
+    deo = validated_data.get('assigned_to_deo')
+    allocator = validated_data.get('assigned_to_allocator')
     
-    # 2. Validate Assignee Role
-    validate_task_assignee(assigned_to)
+    validate_task_assignee(deo, 'DEO')
+    validate_task_assignee(allocator, 'Allocator')
 
-    # 3. Create Task
     task = Task.objects.create(
         assigned_by_user=user,
         **validated_data
     )
     return task
 
-def update_task_status_service(task, status, user):
+def update_task_status_service(task, status_data, user):
     """
-    Allows DEO/Allocator to update status only.
+    Updates the specific status field based on user role.
+    Expects status_data to be a dict like {'status': 'completed'} 
+    mapped to the correct field.
     """
-    # Ensure the user is actually the assignee
-    if task.assigned_to_user != user and user.role != 'manager':
-        raise PermissionDenied("You do not have permission to update this task.")
+    # Logic is largely handled in Serializer validation now, 
+    # but strictly in business logic:
+    
+    new_status = status_data.get('status')
+    if not new_status:
+        return task
 
-    task.status = status
-    task.save(update_fields=['status', 'updated_at'])
+    updated_fields = ['updated_at']
+
+    if user == task.assigned_to_deo:
+        task.deo_status = new_status
+        updated_fields.append('deo_status')
+    
+    elif user == task.assigned_to_allocator:
+        task.allocator_status = new_status
+        updated_fields.append('allocator_status')
+    
+    elif user.role == 'manager':
+        # Manager might want to force update both? 
+        # For now, let's assume they pass specific keys in validated_data via serializer
+        pass
+    else:
+        raise PermissionDenied("You are not assigned to this task.")
+
+    task.save(update_fields=updated_fields)
     return task
