@@ -30,3 +30,19 @@ def update_rfid_status_service(tag, status, user):
     tag.status = status
     tag.save(update_fields=['status', 'updated_at'])
     return tag
+
+
+def encode_rfid_tag_service(tag, new_epc):
+    """
+    Updates the EPC of a tag and automatically sets status to 'encoded'.
+    """
+    # 1. Check for Uniqueness manually to return clean error message
+    if RFIDTag.objects.filter(epc=new_epc).exclude(id=tag.id).exists():
+        raise ValidationError(f"The EPC '{new_epc}' is already assigned to another tag.")
+
+    # 2. Update Fields
+    tag.epc = new_epc
+    tag.status = 'encoded' # Automagical update
+    
+    tag.save()
+    return tag

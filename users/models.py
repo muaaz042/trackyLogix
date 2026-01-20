@@ -59,12 +59,38 @@ class ClientProfile(models.Model):
 
 
 class Warehouse(models.Model):
+    # Basic Info
     name = models.CharField(max_length=255)
+    warehouse_code = models.CharField(max_length=50, unique=True, null=True, blank=True, help_text="Unique identifier for the warehouse")
+    
+    # Location
     address = models.TextField()
+    city = models.CharField(max_length=100, null=True, blank=True)
+    country = models.CharField(max_length=100, null=True, blank=True)
+    
+    # Contact
     contact_number = models.CharField(max_length=20)
+    
+    # Capacity Specifications
+    storage_capacity_sqft = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Total storage area in sq ft")
+    pallet_capacity = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum number of pallets")
+    bin_capacity = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum number of small item bins")
+    
+    # Operational Details
+    # e.g., "Mon-Fri" or "All Days"
+    working_days = models.CharField(max_length=100, null=True, blank=True, help_text="e.g., Mon-Fri")
+    shift_start_time = models.TimeField(null=True, blank=True)
+    shift_end_time = models.TimeField(null=True, blank=True)
+    
+    # Compliance & Legal
+    fire_certificate_no = models.CharField(max_length=100, null=True, blank=True)
+    insurance_policy_no = models.CharField(max_length=100, null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.warehouse_code or 'No Code'})"
 
 
 class WarehouseUserManagement(models.Model):
