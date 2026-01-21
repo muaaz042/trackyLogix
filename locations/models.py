@@ -1,6 +1,13 @@
 from django.db import models
 from users.models import Warehouse
 
+# Shared choices for storage entities
+STORAGE_STATUS_CHOICES = [
+    ('EMPTY', 'Empty'),
+    ('PARTIAL', 'Partially Filled'),
+    ('FULL', 'Full'),
+]
+
 # 1. ZONE
 class Zone(models.Model):
     ZONE_TYPE_CHOICES = [
@@ -28,19 +35,18 @@ class Location(models.Model):
         ('COLD', 'Cold Storage'),
         ('HAZMAT', 'Hazmat'),
     ]
-    CLIENT_TYPE_CHOICES = [
-        ('ECOM', 'E-Commerce'),
-        ('FINISHED', 'Finished Goods'),
-        ('BOTH', 'Both'),
-    ]
+
+    # REMOVED: allowed_client_type
 
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE, related_name='locations')
     name = models.CharField(max_length=100)
     location_type = models.CharField(max_length=20, choices=LOCATION_TYPE_CHOICES)
-    allowed_client_type = models.CharField(max_length=20, choices=CLIENT_TYPE_CHOICES, default='BOTH')
     min_temp = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     max_temp = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     hazard_allowed = models.BooleanField(default=False)
+
+    # ADDED: Status field(In case of floor storage)
+    status = models.CharField(max_length=20, choices=STORAGE_STATUS_CHOICES, default='EMPTY')
 
     def __str__(self):
         return f"{self.zone.name} - {self.name}"
@@ -50,6 +56,9 @@ class Aisle(models.Model):
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name='aisles')
     name = models.CharField(max_length=50)
     epc = models.CharField(max_length=255, unique=True, null=True, blank=True)
+
+    # ADDED: Status field
+    status = models.CharField(max_length=20, choices=STORAGE_STATUS_CHOICES, default='EMPTY')
 
     def __str__(self):
         return f"{self.location.name} - {self.name}"
@@ -65,6 +74,9 @@ class Rack(models.Model):
     rack_type = models.CharField(max_length=20, choices=RACK_TYPE_CHOICES)
     max_weight = models.DecimalField(max_digits=10, decimal_places=2, help_text="Max weight in KG")
     epc = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    
+    # ADDED: Status field
+    status = models.CharField(max_length=20, choices=STORAGE_STATUS_CHOICES, default='EMPTY')
 
     def __str__(self):
         return f"{self.aisle.name} - {self.name}"
@@ -76,6 +88,9 @@ class Level(models.Model):
     max_weight = models.DecimalField(max_digits=10, decimal_places=2, help_text="Max weight in KG")
     epc = models.CharField(max_length=255, unique=True, null=True, blank=True)
 
+    # ADDED: Status field
+    status = models.CharField(max_length=20, choices=STORAGE_STATUS_CHOICES, default='EMPTY')
+
     def __str__(self):
         return f"{self.rack.name} - {self.name}"
 
@@ -86,6 +101,9 @@ class Bin(models.Model):
     max_units = models.PositiveIntegerField()
     max_weight = models.DecimalField(max_digits=10, decimal_places=2, help_text="Max weight in KG")
     epc = models.CharField(max_length=255, unique=True, null=True, blank=True)
+
+    # ADDED: Status field
+    status = models.CharField(max_length=20, choices=STORAGE_STATUS_CHOICES, default='EMPTY')
 
     def __str__(self):
         return f"{self.level.name} - {self.name}"

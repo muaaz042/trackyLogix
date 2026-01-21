@@ -4,7 +4,11 @@ from users.models import WarehouseUserManagement
 def get_user_warehouse_ids(user):
     # Determine which warehouses this user is allowed to see
     if user.role == 'admin':
+        # Admin might see all, or specific assigned ones. 
+        # Assuming admin sees assigned ones like manager for now, 
+        # or remove filter to see ALL if that's the requirement.
         return WarehouseUserManagement.objects.filter(user=user).values_list('warehouse_id', flat=True)
+    
     return WarehouseUserManagement.objects.filter(user=user).values_list('warehouse_id', flat=True)
 
 def get_zones_for_user(user):

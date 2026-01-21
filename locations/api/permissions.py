@@ -2,7 +2,8 @@ from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 class IsLocationManager(BasePermission):
     """
-    Manager: Full Access
+    CRUD Permissions:
+    Manager: Full Access (Create, Read, Update, Delete)
     Allocator/Admin: Read Only
     """
     def has_permission(self, request, view):
@@ -15,3 +16,18 @@ class IsLocationManager(BasePermission):
         
         # Write for Manager
         return request.user.role == 'manager'
+
+class IsLayoutViewer(BasePermission):
+    """
+    Strictly for the Warehouse Layout Visualization Endpoint.
+    Allowed: Admin, Manager, Allocator
+    """
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        
+        # Only these 3 roles can see the capacity map
+        if request.user.role in ['admin', 'manager', 'Allocator']:
+            return True
+            
+        return False
