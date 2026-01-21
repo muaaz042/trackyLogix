@@ -8,16 +8,16 @@ class RFIDTagSerializer(serializers.ModelSerializer):
         source='inbound_item', 
         write_only=True
     )
-    inbound_item_details = serializers.StringRelatedField(source='inbound_item', read_only=True)
+    inbound_item_name = serializers.CharField(source='inbound_item.name', read_only=True)
     sku = serializers.CharField(source='inbound_item.sku', read_only=True)
 
     class Meta:
         model = RFIDTag
         fields = [
             'id', 'epc', 'status', 'inbound_item_id', 
-            'inbound_item_details', 'sku', 'created_at', 'updated_at'
+            'inbound_item_name', 'sku', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['created_at', 'updated_at', 'sku', 'inbound_item_details']
+        read_only_fields = ['created_at', 'updated_at', 'sku', 'inbound_item_name']
 
 
 class RFIDStatusSerializer(serializers.Serializer):
