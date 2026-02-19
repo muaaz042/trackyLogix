@@ -13,7 +13,6 @@ class Zone(models.Model):
     ZONE_TYPE_CHOICES = [
         ('INBOUND', 'Inbound'),
         ('STORAGE', 'Storage'),
-        ('PICK', 'Pick'),
         ('COLD', 'Cold Storage'),
         ('HAZMAT', 'Hazardous Materials'),
         ('DISPATCH', 'Dispatch'),
@@ -29,14 +28,11 @@ class Zone(models.Model):
 class Location(models.Model):
     LOCATION_TYPE_CHOICES = [
         ('FLOOR', 'Floor'),
-        ('PALLET', 'Pallet'),
         ('SHELF', 'Shelf'),
         ('BIN', 'Bin'),
         ('COLD', 'Cold Storage'),
         ('HAZMAT', 'Hazmat'),
     ]
-
-    # REMOVED: allowed_client_type
 
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE, related_name='locations')
     name = models.CharField(max_length=100)

@@ -3,7 +3,7 @@ from allocations.models import Allocation
 from rfid.models import RFIDTag
 from locations.models import Location, Level, Bin
 
-# --- Standard CRUD Serializer (Keep as is) ---
+
 class AllocationSerializer(serializers.ModelSerializer):
     rfid_id = serializers.PrimaryKeyRelatedField(
         queryset=RFIDTag.objects.all(), source='rfid', write_only=True
@@ -46,7 +46,6 @@ class AllocationSerializer(serializers.ModelSerializer):
         if obj.bin: parts.append(obj.bin.name)
         return " > ".join(parts)
 
-# --- EPC LOOKUP SERIALIZERS ---
 
 class EPCLookupRequestSerializer(serializers.Serializer):
     epcs = serializers.ListField(
@@ -62,21 +61,43 @@ class SKULookupRequestSerializer(serializers.Serializer):
         help_text="List of SKUs to search for."
     )
 
-# --- FULL DETAILS (For EPC Lookup) ---
+
 class AllocationDetailsSerializer(serializers.ModelSerializer):
-    # ... [Keep existing implementation for EPC lookup] ...
-    # (This one keeps all the details like weight, dimensions, etc.)
+    """
+    Rich serializer for Lookup Endpoints.
+    """
+    # 1. Basic Identifiers
     epc = serializers.CharField(source='rfid.epc')
     sku = serializers.CharField(source='rfid.inbound_item.sku', default="N/A")
-    # ... (other fields omitted for brevity, keep your existing code here) ...
+    item_name = serializers.CharField(source='rfid.inbound_item.name', default="N/A")
+
+    # 2. Detailed Inbound Item Data
+    quantity = serializers.IntegerField(source='rfid.inbound_item.quantity', default=0)
+    remaining_quantity = serializers.IntegerField(source='rfid.inbound_item.remaining_quantity', default=0)
+    weight = serializers.DecimalField(source='rfid.inbound_item.weight', max_digits=10, decimal_places=2, default=0.00)
+    dimensions = serializers.CharField(source='rfid.inbound_item.dimensions', default="N/A")
+    unit_type = serializers.CharField(source='rfid.inbound_item.unit_type', default="N/A")
+    temp_range = serializers.CharField(source='rfid.inbound_item.temp_range', default="N/A")
+    humidity_range = serializers.CharField(source='rfid.inbound_item.humidity_range', default="N/A")
+    fragile = serializers.BooleanField(source='rfid.inbound_item.fragile', default=False)
+    hazardous = serializers.BooleanField(source='rfid.inbound_item.hazardous', default=False)
+    batch_no = serializers.CharField(source='rfid.inbound_item.batch_or_lot_no', default="N/A")
+    expiry_date = serializers.DateField(source='rfid.inbound_item.expiry_date', allow_null=True)
+    inbound_status = serializers.CharField(source='rfid.inbound_item.item_status', default="N/A")
+    
+    # 3. Consolidated Location Field
     full_location = serializers.SerializerMethodField()
 
     class Meta:
         model = Allocation
         fields = [
-            'id', 'epc', 'sku', 'item_name', 
-            'quantity', 'remaining_quantity', 'full_location', 'allocated_at' 
-            # ... add back all fields you had before for EPC lookup ...
+            'id', 
+            'epc', 'sku', 'item_name',
+            'quantity', 'remaining_quantity', 'weight', 'dimensions',
+            'unit_type', 'temp_range', 'humidity_range',
+            'fragile', 'hazardous', 'batch_no', 'expiry_date', 'inbound_status',
+            'full_location',
+            'allocated_at'
         ]
 
     def get_full_location(self, obj):
